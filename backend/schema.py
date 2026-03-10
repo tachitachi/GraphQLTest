@@ -8,7 +8,9 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from strawberry.types import Info
 
+from adapters.author_adapter import get_authors
 from cache import cache_delete, cached_json
+from adapters.book_adapter import AuthorNotFoundError, add_book, get_book, get_books
 from models import authors, books
 
 @strawberry.type
@@ -37,36 +39,7 @@ def _get_redis(info: Info):
 async def resolve_books(info: Info) -> List[Book]:
     session = await _get_session(info)
 
-    async def _fetch():
-        stmt = (
-            select(
-                books.c.id,
-                books.c.title,
-                books.c.description,
-                authors.c.id.label("author_id"),
-                authors.c.name.label("author_name"),
-                authors.c.bio.label("author_bio"),
-            )
-            .select_from(books.join(authors, books.c.author_id == authors.c.id))
-            .order_by(books.c.id)
-        )
-        result = await session.execute(stmt)
-        rows = result.all()
-        return [
-            {
-                "id": row.id,
-                "title": row.title,
-                "description": row.description,
-                "author": {
-                    "id": row.author_id,
-                    "name": row.author_name,
-                    "bio": row.author_bio,
-                },
-            }
-            for row in rows
-        ]
-
-    data = await cached_json(redis=_get_redis(info), key="books:all", fetcher=_fetch)
+    data = await cached_json(redis=_get_redis(info), key="books:all", fetcher=lambda: get_books(session))
     return [
         Book(
             id=item["id"],
@@ -82,14 +55,7 @@ async def resolve_books(info: Info) -> List[Book]:
 async def resolve_authors(info: Info) -> List[Author]:
     session = await _get_session(info)
 
-    async def _fetch():
-        result = await session.execute(
-            select(authors.c.id, authors.c.name, authors.c.bio).order_by(authors.c.id)
-        )
-        rows = result.all()
-        return [{"id": row.id, "name": row.name, "bio": row.bio} for row in rows]
-
-    data = await cached_json(redis=_get_redis(info), key="authors:all", fetcher=_fetch)
+    data = await cached_json(redis=_get_redis(info), key="authors:all", fetcher=lambda: get_authors(session))
     return [Author(**item) for item in data]
 
 
@@ -97,35 +63,7 @@ async def resolve_book(info: Info, id: int) -> Optional[Book]:
     session = await _get_session(info)
     key = f"book:{id}"
 
-    async def _fetch():
-        stmt = (
-            select(
-                books.c.id,
-                books.c.title,
-                books.c.description,
-                authors.c.id.label("author_id"),
-                authors.c.name.label("author_name"),
-                authors.c.bio.label("author_bio"),
-            )
-            .select_from(books.join(authors, books.c.author_id == authors.c.id))
-            .where(books.c.id == id)
-        )
-        result = await session.execute(stmt)
-        row = result.first()
-        if not row:
-            return None
-        return {
-            "id": row.id,
-            "title": row.title,
-            "description": row.description,
-            "author": {
-                "id": row.author_id,
-                "name": row.author_name,
-                "bio": row.author_bio,
-            },
-        }
-
-    item = await cached_json(redis=_get_redis(info), key=key, fetcher=_fetch)
+    item = await cached_json(redis=_get_redis(info), key=key, fetcher=lambda: get_book(session, id))
     if item is None:
         return None
     return Book(
@@ -174,23 +112,11 @@ class Mutation:
         description: Optional[str] = None,
     ) -> Book:
         session = await _get_session(info)
+        try:
+            inserted_row, author_row = await add_book(session, title, author_id, description)
+        except AuthorNotFoundError as e:
+            raise GraphQLError(str(e))
 
-        # Ensure author exists
-        author_result = await session.execute(
-            select(authors.c.id, authors.c.name, authors.c.bio).where(authors.c.id == author_id)
-        )
-        author_row = author_result.first()
-        if not author_row:
-            raise GraphQLError(f"Author with id {author_id} does not exist")
-
-        insert_stmt = (
-            insert(books)
-            .values(title=title, description=description, author_id=author_id)
-            .returning(books.c.id, books.c.title, books.c.description)
-        )
-        inserted = await session.execute(insert_stmt)
-        inserted_row = inserted.first()
-        await session.commit()
         if not inserted_row:
             raise GraphQLError("Failed to insert book")
 
