@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from typing import Any, Awaitable, Callable, Optional, TypeVar
+
+from backend.core.config import CACHE_TTL_SECONDS
 
 T = TypeVar("T")
 
@@ -11,12 +12,7 @@ logger = logging.getLogger("backend.cache")
 
 
 def _ttl_seconds() -> int:
-    raw = os.getenv("CACHE_TTL_SECONDS", "30")
-    try:
-        ttl = int(raw)
-    except ValueError:
-        ttl = 30
-    return max(ttl, 0)
+    return CACHE_TTL_SECONDS
 
 
 async def cached_json(

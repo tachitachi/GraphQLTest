@@ -1,18 +1,15 @@
 import logging
-import os
 
 import redis.asyncio as redis
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from strawberry.fastapi import GraphQLRouter
 
-from database import get_session
-from schema import schema
+from backend.core.config import LOG_LEVEL, REDIS_URL
+from backend.graphql.schema import graphql_app  # type: ignore[import]
 
 
 app = FastAPI(title="Personal Book Tracker API")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logging.basicConfig(level=LOG_LEVEL)
 
 redis_client: redis.Redis | None = None
 
@@ -33,9 +30,8 @@ app.add_middleware(
 @app.on_event("startup")
 async def _startup() -> None:
     global redis_client
-    redis_url = os.getenv("REDIS_URL")
-    if redis_url:
-        redis_client = redis.from_url(redis_url, decode_responses=True)
+    if REDIS_URL:
+        redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 
 @app.on_event("shutdown")
@@ -45,15 +41,6 @@ async def _shutdown() -> None:
         await redis_client.aclose()
         redis_client = None
 
-
-async def get_context(session: AsyncSession = Depends(get_session)):
-    return {
-        "session": session,
-        "redis": redis_client
-    }
-
-
-graphql_app = GraphQLRouter(schema, context_getter=get_context)
 
 app.include_router(graphql_app, prefix="/graphql")
 
