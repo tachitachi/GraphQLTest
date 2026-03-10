@@ -12,6 +12,7 @@ sqlalchemy = "*"
 asyncpg = "*"
 uvicorn = { extras = ["standard"], version = "*" }
 redis = "*"
+aiobreaker = "*"
 
 [tool.poetry.group.dev.dependencies]
 
