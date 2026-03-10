@@ -17,10 +17,19 @@ It is designed as an onboarding example so you can understand the full flow and 
   - `.devcontainer/backend/devcontainer.json` – Dev Container targeting the **backend** service from `docker-compose.yml`, with Python tooling extensions.
   - `.devcontainer/frontend/devcontainer.json` – Dev Container targeting the **frontend** service from `docker-compose.yml`, with JS/TS tooling extensions.
 - `backend/`
-  - `main.py` – FastAPI entrypoint and Strawberry GraphQL router at `/graphql`.
-  - `schema.py` – Strawberry GraphQL schema and resolvers (queries + mutations).
-  - `models.py` – SQLAlchemy **Core** table definitions (`authors`, `books`).
-  - `database.py` – Async PostgreSQL engine and session factory.
+  - `src/backend/main.py` – FastAPI entrypoint and Strawberry GraphQL router at `/graphql`.
+  - `src/backend/core/config.py` – Application settings and environment configuration.
+  - `src/backend/core/database.py` – Async PostgreSQL engine and session factory.
+  - `src/backend/core/cache.py` – In‑memory cache helpers (used by services/resolvers).
+  - `src/backend/graphql/schema.py` – Strawberry GraphQL schema and root types.
+  - `src/backend/graphql/context.py` – Per‑request GraphQL context setup.
+  - `src/backend/graphql/types/` – Strawberry object/input type definitions.
+  - `src/backend/graphql/resolvers/` – Query and mutation resolver functions.
+  - `src/backend/models/sql/` – SQLAlchemy **Core** table definitions (`authors`, `books`, etc.).
+  - `src/backend/models/schemas/` – Request/response DTOs for the API layer.
+  - `src/backend/services/book_adapter.py` – Book‑related domain logic and data access.
+  - `src/backend/services/author_adapter.py` – Author‑related domain logic and data access.
+  - `src/backend/services/circuit_breakers/` – Circuit breaker registry and storage.
   - `pyproject.toml` – Poetry dependency configuration.
   - `Dockerfile` – Python 3.11 image running `uvicorn`.
 - `frontend/`
@@ -227,9 +236,9 @@ To create your own GraphQL app based on this example:
 
 1. **Change the domain:**
    - Update `database/init.sql` for your tables and seed data.
-   - Update `backend/models.py` table definitions.
+   - Update `backend/src/backend/models/sql/` table definitions.
 2. **Update GraphQL schema:**
-   - Modify `backend/schema.py` types (`Author`, `Book`) and resolvers to match your entities.
+   - Modify `backend/src/backend/graphql/schema.py` types (`Author`, `Book`) and resolvers to match your entities.
 3. **Update frontend UI:**
    - Adjust `src/queries.ts` for your new queries and mutations.
    - Update `src/App.tsx` to render your data instead of books/authors.
