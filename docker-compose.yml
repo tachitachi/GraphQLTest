@@ -13,6 +13,13 @@ services:
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
+  redis:
+    image: redis:7-alpine
+    container_name: booktracker-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+
   backend:
     build: ./backend
     container_name: booktracker-backend
@@ -21,11 +28,14 @@ services:
       - ./backend:/app
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/booksdb
+      REDIS_URL: redis://redis:6379/0
+      CACHE_TTL_SECONDS: 30
       WATCHFILES_FORCE_POLLING: true
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - redis
 
   frontend:
     build: ./frontend
