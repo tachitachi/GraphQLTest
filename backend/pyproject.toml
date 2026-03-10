@@ -11,6 +11,7 @@ strawberry-graphql = { extras = ["fastapi"], version = "*" }
 sqlalchemy = "*"
 asyncpg = "*"
 uvicorn = { extras = ["standard"], version = "*" }
+redis = "*"
 
 [tool.poetry.group.dev.dependencies]
 
