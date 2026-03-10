@@ -17,14 +17,16 @@ export const GET_BOOKS = gql`
 
 export const ADD_BOOK = gql`
   mutation AddBook($title: String!, $authorId: Int!, $description: String) {
-    addBook(title: $title, authorId: $authorId, description: $description) {
-      id
-      title
-      description
-      author {
+    books {
+      addBook(title: $title, authorId: $authorId, description: $description) {
         id
-        name
-        bio
+        title
+        description
+        author {
+          id
+          name
+          bio
+        }
       }
     }
   }

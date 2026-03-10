@@ -1,14 +1,14 @@
-
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import authors, books
+from backend.models.sql import authors, books
+from backend.services.circuit_breakers.registry import db_breaker
+from backend.services.author_adapter import AuthorNotFoundError
 
-class AuthorNotFoundError(Exception):
-    pass
 
+@db_breaker
 async def get_books(session: AsyncSession) -> List[Dict[str, Any]]:
     stmt = (
         select(
@@ -38,6 +38,8 @@ async def get_books(session: AsyncSession) -> List[Dict[str, Any]]:
         for row in rows
     ]
 
+
+@db_breaker
 async def get_book(session: AsyncSession, id: int) -> Optional[Dict[str, Any]]:
     stmt = (
         select(
@@ -66,8 +68,11 @@ async def get_book(session: AsyncSession, id: int) -> Optional[Dict[str, Any]]:
         },
     }
 
-async def add_book(session: AsyncSession, title: str, author_id: int, description: Optional[str] = None) -> Dict[str, Any]:
-    # Ensure author exists
+
+@db_breaker
+async def add_book(
+    session: AsyncSession, title: str, author_id: int, description: Optional[str] = None
+) -> Tuple[Any, Any]:
     author_result = await session.execute(
         select(authors.c.id, authors.c.name, authors.c.bio).where(authors.c.id == author_id)
     )
@@ -85,3 +90,4 @@ async def add_book(session: AsyncSession, title: str, author_id: int, descriptio
     await session.commit()
 
     return inserted_row, author_row
+
