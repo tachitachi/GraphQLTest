@@ -20,6 +20,16 @@ services:
       - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
 
+  publisher:
+    build: ./publisher
+    container_name: booktracker-publisher
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      EVENT_ID_POOL_SIZE: 8
+      PUBLISH_INTERVAL_MS: 25
+    depends_on:
+      - redis
+
   backend:
     build: ./backend
     container_name: booktracker-backend
@@ -55,15 +65,15 @@ services:
     depends_on:
       - backend
 
-  k6:
-    image: grafana/k6:latest
-    container_name: booktracker-k6
-    volumes:
-      - ./load-testing:/scripts
-    command: run /scripts/load-test.js
-    environment:
-      BASE_URL: http://backend:8000
-    depends_on:
-      backend:
-        condition: service_healthy
+  # k6:
+  #   image: grafana/k6:latest
+  #   container_name: booktracker-k6
+  #   volumes:
+  #     - ./load-testing:/scripts
+  #   command: run /scripts/load-test.js
+  #   environment:
+  #     BASE_URL: http://backend:8000
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy
 

@@ -105,5 +105,8 @@ export default function () {
       authorId: Math.floor(Math.random() * 3) + 1,
       description: `test description ${Math.floor(Math.random() * 1000)}`
     }
-  )
+  );
+  check(addBookRes, { 'addBook status 200': (r) => r.status === 200 });
+  
+  sleep(0.5);
 }
