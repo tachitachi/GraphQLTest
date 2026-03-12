@@ -143,6 +143,8 @@ class RedisPubSubMultiplexer:
         if not clients:
             return
 
+        logger.info(f"Broadcasting to {len(clients)} clients")
+
         msg = {"eventId": event_id, "data": data}
         dead: list[WebSocket] = []
         for ws in clients:

@@ -43,6 +43,10 @@ services:
       WATCHFILES_FORCE_POLLING: true
     ports:
       - "8000:8000"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     depends_on:
       - db
       - redis
@@ -76,4 +80,16 @@ services:
   #   depends_on:
   #     backend:
   #       condition: service_healthy
+
+  k6-ws:
+    image: grafana/k6:latest
+    container_name: booktracker-k6-ws
+    volumes:
+      - ./load-testing:/scripts
+    command: run /scripts/load-test-ws.js
+    environment:
+      BASE_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
 
