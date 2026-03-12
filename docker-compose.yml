@@ -36,6 +36,12 @@ services:
     depends_on:
       - db
       - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   frontend:
     build: ./frontend
@@ -48,4 +54,16 @@ services:
       CHOKIDAR_USEPOLLING: true
     depends_on:
       - backend
+
+  k6:
+    image: grafana/k6:latest
+    container_name: booktracker-k6
+    volumes:
+      - ./load-testing:/scripts
+    command: run /scripts/load-test.js
+    environment:
+      BASE_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
 
