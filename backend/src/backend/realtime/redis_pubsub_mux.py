@@ -5,6 +5,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
 from fastapi import WebSocket
@@ -145,7 +146,7 @@ class RedisPubSubMultiplexer:
 
         logger.info(f"Broadcasting to {len(clients)} clients")
 
-        msg = {"eventId": event_id, "data": data}
+        msg = {"eventId": event_id, "data": data, "sentAt": datetime.now(UTC).timestamp()}
         dead: list[WebSocket] = []
         for ws in clients:
             try:

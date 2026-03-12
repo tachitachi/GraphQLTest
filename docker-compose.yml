@@ -26,14 +26,14 @@ services:
     environment:
       REDIS_URL: redis://redis:6379/0
       EVENT_ID_POOL_SIZE: 8
-      PUBLISH_INTERVAL_MS: 25
+      PUBLISH_INTERVAL_MS: 1000
     depends_on:
       - redis
 
   backend:
     build: ./backend
     container_name: booktracker-backend
-    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --log-level error
     volumes:
       - ./backend:/app
     environment:
@@ -41,6 +41,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CACHE_TTL_SECONDS: 30
       WATCHFILES_FORCE_POLLING: true
+      LOG_LEVEL: ERROR
     ports:
       - "8000:8000"
     ulimits:
