@@ -48,6 +48,12 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      # Increases the queue for 'pending' connections (Listen Backlog)
+      - net.core.somaxconn=10000 
+      # Optional: Increases the memory allocated for TCP sockets
+      # - net.ipv4.tcp_mem=786432 1048576 1572864
     depends_on:
       - db
       - redis
@@ -87,6 +93,15 @@ services:
     container_name: booktracker-k6-ws
     volumes:
       - ./load-testing:/scripts
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    sysctls:
+      # Expands the range of local ports k6 can use to talk to the API
+      - net.ipv4.ip_local_port_range=1024 65535
+      # Allows k6 to quickly reuse ports in TIME_WAIT state
+      - net.ipv4.tcp_tw_reuse=1
     command: run /scripts/load-test-ws.js
     environment:
       BASE_URL: http://backend:8000

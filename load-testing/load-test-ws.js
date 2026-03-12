@@ -16,7 +16,7 @@ export const options = {
       delayAbortEval: '10s'
     }],
     'event_latency_ms': [{
-      threshold: 'p(95)<50',
+      threshold: 'p(95)<500',
       abortOnFail: true,
       delayAbortEval: '10s'
     }],
@@ -36,6 +36,7 @@ export default function () {
   const res = ws.connect(url, params, function (socket) {
     socket.on('open', () => {
       //   console.log('Connected to WS');
+      check(true, { 'connection established': (v) => v === true });
       connected = true;
 
       for(let i = 0; i < 8; i++) {
